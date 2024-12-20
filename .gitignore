@@ -3,3 +3,17 @@
 __pycache__/libCal.cpython-313.pyc
 library_events.spec
 Delaware Library Events
+build/app/Analysis-00.toc
+build/app/base_library.zip
+build/app/EXE-00.toc
+build/app/LibraryEvents.pkg
+build/app/PKG-00.toc
+build/app/PYZ-00.pyz
+build/app/PYZ-00.toc
+build/app/warn-app.txt
+build/app/xref-app.html
+build/app/localpycs/pyimod01_archive.pyc
+build/app/localpycs/pyimod02_importers.pyc
+build/app/localpycs/pyimod03_ctypes.pyc
+build/app/localpycs/struct.pyc
+dist/LibraryEvents
