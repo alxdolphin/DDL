@@ -6,10 +6,6 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import FuzzyWordCompleter
-import argparse
-import argcomplete
-import subprocess
-import sys
 
 load_dotenv()
 
@@ -83,18 +79,15 @@ def get_library_choice(library_ids):
         else:
             print("Library not found. Please try again.")
 
-def ensure_autocomplete():
-    try:
-        subprocess.run(['activate-global-python-argcomplete', '--user'], 
-                     capture_output=True, check=True)
-    except Exception as e:
-        print("WARN: Could not set up autocompletions automatically")
-
 def main():
-    # run autocomplete setup on first import
-    if not sys.argv[0].endswith('libCal.py'):
-        ensure_autocomplete()
+    user_date = input("Enter a date (YYYY-MM-DD): ")
+    try:
+        datetime.strptime(user_date, "%Y-%m-%d")
+    except ValueError:
+        print("Invalid date format. Please use YYYY-MM-DD.")
+        return
 
+    # Delaware Libraries calendar IDs
     library_ids = {
         9393: "Appoquinimink Public Library",
         9394: "Bear Public Library",
@@ -131,20 +124,7 @@ def main():
         9406: "Woodlawn Public Library"
     }
 
-    parser = argparse.ArgumentParser(description='Get library events for a specific date.')
-    parser.add_argument('-d', '--date', help='Date in YYYY-MM-DD format')
-    parser.add_argument('-l', '--library', nargs='+', help='Library names to search')
-    argcomplete.autocomplete(parser)
-    args = parser.parse_args()
-
-    user_date = args.date if args.date else input("Enter a date (YYYY-MM-DD): ")
-    try:
-        datetime.strptime(user_date, "%Y-%m-%d")
-    except ValueError:
-        print("Invalid date format. Please use YYYY-MM-DD.")
-        return
-
-    calendar_ids = [id for id, name in library_ids.items() if name in args.library] if args.library else get_library_choice(library_ids)
+    calendar_ids = get_library_choice(library_ids)
 
     try:
         token = get_access_token()
