@@ -14,6 +14,45 @@ CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 TOKEN_URL = os.getenv("TOKEN_URL")
 EVENTS_URL = os.getenv("EVENTS_URL")
 
+library_ids = {
+        9393: "Appoquinimink Public Library",
+        9394: "Bear Public Library",
+        9395: "Brandywine Hundred Library",
+        9410: "Bridgeville Public Library",
+        9396: "Claymont Public Library",
+        9397: "Corbit-Calloway Memorial Library",
+        9398: "Delaware City Public Library",
+        9411: "Delmar Public Library",
+        8206: "Dover Public Library",
+        9399: "Elsmere Public Library",
+        9412: "Frankford Public Library",
+        9369: "Georgetown Public Library",
+        9413: "Greenwood Public Library",
+        9407: "Harrington Public Library",
+        9400: "Hockessin Public Library",
+        9408: "Kent County Public Library",
+        9401: "Kirkwood Library",
+        9414: "Laurel Public Library",
+        9415: "Lewes Public Library",
+        9409: "Milford Public Library",
+        9416: "Millsboro Public Library",
+        9417: "Milton Public Library",
+        9402: "New Castle Public Library",
+        9403: "Newark Free Library",
+        9418: "Rehoboth Beach Public Library",
+        9404: "Route 9 Library & Innovation Center",
+        9419: "Seaford District Library",
+        9420: "Selbyville Public Library",
+        9181: "Smyrna Public Library",
+        9421: "South Coastal Public Library",
+        8205: "Wilmington Public Library",
+        9405: "Wilmington Public Library - North Branch",
+        9406: "Woodlawn Public Library"
+    }
+
+def get_library_ids():
+    return library_ids
+
 def get_access_token():
     """Authenticate and get an access token."""
     response = requests.post(TOKEN_URL, data={
@@ -86,43 +125,6 @@ def main():
     except ValueError:
         print("Invalid date format. Please use YYYY-MM-DD.")
         return
-
-    # Delaware Libraries calendar IDs
-    library_ids = {
-        9393: "Appoquinimink Public Library",
-        9394: "Bear Public Library",
-        9395: "Brandywine Hundred Library",
-        9410: "Bridgeville Public Library",
-        9396: "Claymont Public Library",
-        9397: "Corbit-Calloway Memorial Library",
-        9398: "Delaware City Public Library",
-        9411: "Delmar Public Library",
-        8206: "Dover Public Library",
-        9399: "Elsmere Public Library",
-        9412: "Frankford Public Library",
-        9369: "Georgetown Public Library",
-        9413: "Greenwood Public Library",
-        9407: "Harrington Public Library",
-        9400: "Hockessin Public Library",
-        9408: "Kent County Public Library",
-        9401: "Kirkwood Library",
-        9414: "Laurel Public Library",
-        9415: "Lewes Public Library",
-        9409: "Milford Public Library",
-        9416: "Millsboro Public Library",
-        9417: "Milton Public Library",
-        9402: "New Castle Public Library",
-        9403: "Newark Free Library",
-        9418: "Rehoboth Beach Public Library",
-        9404: "Route 9 Library & Innovation Center",
-        9419: "Seaford District Library",
-        9420: "Selbyville Public Library",
-        9181: "Smyrna Public Library",
-        9421: "South Coastal Public Library",
-        8205: "Wilmington Public Library",
-        9405: "Wilmington Public Library - North Branch",
-        9406: "Woodlawn Public Library"
-    }
 
     calendar_ids = get_library_choice(library_ids)
 

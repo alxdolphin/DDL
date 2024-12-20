@@ -1,1 +1,5 @@
 .env
+.DS_Store
+__pycache__/libCal.cpython-313.pyc
+library_events.spec
+Delaware Library Events
