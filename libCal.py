@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import FuzzyWordCompleter
+import argparse
 
 load_dotenv()
 
@@ -79,7 +80,12 @@ def get_library_choice(library_ids):
             print("Library not found. Please try again.")
 
 def main():
-    user_date = input("Enter a date (YYYY-MM-DD): ")
+    parser = argparse.ArgumentParser(description='Get library events for a specific date.')
+    parser.add_argument('-d', '--date', help='Date in YYYY-MM-DD format')
+    parser.add_argument('-l', '--library', nargs='+', help='Library names to search')
+    args = parser.parse_args()
+
+    user_date = args.date if args.date else input("Enter a date (YYYY-MM-DD): ")
     try:
         datetime.strptime(user_date, "%Y-%m-%d")
     except ValueError:
