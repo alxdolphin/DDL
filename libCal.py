@@ -1,8 +1,10 @@
-import requests
-from datetime import datetime
-from bs4 import BeautifulSoup
 import os
+from datetime import datetime
+import requests
+from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+from prompt_toolkit import prompt
+from prompt_toolkit.completion import FuzzyWordCompleter
 
 load_dotenv()
 
@@ -48,6 +50,34 @@ def strip_html_tags(html_text):
     soup = BeautifulSoup(html_text, "html.parser")
     return soup.get_text()
 
+def get_library_choice(library_ids):
+    library_names = list(library_ids.values())
+    library_completer = FuzzyWordCompleter(library_names)
+    selected_ids = []
+    
+    while True:
+        selected = prompt(
+            'Enter library name (press Tab for suggestions, press Enter when finished): ',
+            completer=library_completer
+        ).strip()
+        
+        if not selected:  # if empty input just send it
+            if selected_ids:
+                return selected_ids
+            print("Please select at least one library.")
+            continue
+            
+        for id, name in library_ids.items():
+            if name.lower() == selected.lower():
+                if id not in selected_ids:
+                    selected_ids.append(id)
+                    print(f"Added {name} to selection.")
+                else:
+                    print(f"{name} is already selected.")
+                break
+        else:
+            print("Library not found. Please try again.")
+
 def main():
     user_date = input("Enter a date (YYYY-MM-DD): ")
     try:
@@ -92,7 +122,8 @@ def main():
         9405: "Wilmington Public Library - North Branch",
         9406: "Woodlawn Public Library"
     }
-    calendar_ids = list(library_ids.keys())
+
+    calendar_ids = get_library_choice(library_ids)
 
     try:
         token = get_access_token()
