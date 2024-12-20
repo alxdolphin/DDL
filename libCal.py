@@ -145,7 +145,17 @@ def main():
                 print(f"Location: {location}")
                 print(f"Event: {title}")
                 print(f"Time: {start} to {end}")
-                print(f"Description: {description}")
+                description_no_line_breaks = description.replace('\n', ' ').replace('\r', '')
+                description_no_extra_spaces = ' '.join(description_no_line_breaks.split())
+                if len(description_no_extra_spaces) > 77:
+                    truncated_description = description_no_extra_spaces[:77]
+                    last_space = truncated_description.rfind(' ')
+                    if last_space != -1:
+                        truncated_description = truncated_description[:last_space]
+                    truncated_description += '<...>'
+                else:
+                    truncated_description = description_no_extra_spaces
+                print(f"Description: {truncated_description}")
                 print("--------------------------------------------------")
 
         else:
