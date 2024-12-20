@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import os
 from datetime import datetime
 import requests
@@ -6,7 +7,9 @@ from dotenv import load_dotenv
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import FuzzyWordCompleter
 import argparse
-from argcomplete import autocomplete
+import argcomplete
+import subprocess
+import sys
 
 load_dotenv()
 
@@ -80,8 +83,18 @@ def get_library_choice(library_ids):
         else:
             print("Library not found. Please try again.")
 
-def library_completer(**kwargs):
-    # predefined library names for autocomplete
+def ensure_autocomplete():
+    try:
+        subprocess.run(['activate-global-python-argcomplete', '--user'], 
+                     capture_output=True, check=True)
+    except Exception as e:
+        print("WARN: Could not set up autocompletions automatically")
+
+def main():
+    # run autocomplete setup on first import
+    if not sys.argv[0].endswith('libCal.py'):
+        ensure_autocomplete()
+
     library_ids = {
         9393: "Appoquinimink Public Library",
         9394: "Bear Public Library",
@@ -117,13 +130,11 @@ def library_completer(**kwargs):
         9405: "Wilmington Public Library - North Branch",
         9406: "Woodlawn Public Library"
     }
-    return list(library_ids.values())
 
-def main():
     parser = argparse.ArgumentParser(description='Get library events for a specific date.')
     parser.add_argument('-d', '--date', help='Date in YYYY-MM-DD format')
-    parser.add_argument('-l', '--library', nargs='+', help='Library names to search').completer = library_completer
-    autocomplete(parser)
+    parser.add_argument('-l', '--library', nargs='+', help='Library names to search')
+    argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
     user_date = args.date if args.date else input("Enter a date (YYYY-MM-DD): ")
@@ -133,44 +144,7 @@ def main():
         print("Invalid date format. Please use YYYY-MM-DD.")
         return
 
-    # Delaware Libraries calendar IDs
-    library_ids = {
-        9393: "Appoquinimink Public Library",
-        9394: "Bear Public Library",
-        9395: "Brandywine Hundred Library",
-        9410: "Bridgeville Public Library",
-        9396: "Claymont Public Library",
-        9397: "Corbit-Calloway Memorial Library",
-        9398: "Delaware City Public Library",
-        9411: "Delmar Public Library",
-        8206: "Dover Public Library",
-        9399: "Elsmere Public Library",
-        9412: "Frankford Public Library",
-        9369: "Georgetown Public Library",
-        9413: "Greenwood Public Library",
-        9407: "Harrington Public Library",
-        9400: "Hockessin Public Library",
-        9408: "Kent County Public Library",
-        9401: "Kirkwood Library",
-        9414: "Laurel Public Library",
-        9415: "Lewes Public Library",
-        9409: "Milford Public Library",
-        9416: "Millsboro Public Library",
-        9417: "Milton Public Library",
-        9402: "New Castle Public Library",
-        9403: "Newark Free Library",
-        9418: "Rehoboth Beach Public Library",
-        9404: "Route 9 Library & Innovation Center",
-        9419: "Seaford District Library",
-        9420: "Selbyville Public Library",
-        9181: "Smyrna Public Library",
-        9421: "South Coastal Public Library",
-        8205: "Wilmington Public Library",
-        9405: "Wilmington Public Library - North Branch",
-        9406: "Woodlawn Public Library"
-    }
-
-    calendar_ids = get_library_choice(library_ids)
+    calendar_ids = [id for id, name in library_ids.items() if name in args.library] if args.library else get_library_choice(library_ids)
 
     try:
         token = get_access_token()
