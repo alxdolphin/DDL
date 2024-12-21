@@ -2,6 +2,6 @@
 
 This repo is for storing code I work on for DDL.
 
-## libCal.py - Learning the LibCal API
+## event_finder - Learning the LibCal API
 
 Looks across all the libraries' calendars and returns a list of events for a user-given date. For event planning purposes.
