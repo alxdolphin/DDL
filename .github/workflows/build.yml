@@ -16,16 +16,16 @@ jobs:
     
     - name: Create .env file
       run: |
-        echo "CLIENT_ID=${{ secrets.CLIENT_ID }}" > .env
-        echo "CLIENT_SECRET=${{ secrets.CLIENT_SECRET }}" >> .env
-        echo "TOKEN_URL=${{ secrets.TOKEN_URL }}" >> .env
-        echo "EVENTS_URL=${{ secrets.EVENTS_URL }}" >> .env
+        echo "CLIENT_ID=${{ secrets.CLIENT_ID }}" > event_finder/.env
+        echo "CLIENT_SECRET=${{ secrets.CLIENT_SECRET }}" >> event_finder/.env
+        echo "TOKEN_URL=${{ secrets.TOKEN_URL }}" >> event_finder/.env
+        echo "EVENTS_URL=${{ secrets.EVENTS_URL }}" >> event_finder/.env
     
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install pyinstaller
-        pip install -r requirements.txt
+        pip install -r event_finder/requirements.txt
     
     - name: Build executable
       run: pyinstaller event_finder/app.spec
