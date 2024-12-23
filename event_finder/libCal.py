@@ -13,44 +13,44 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 API_URL = "https://delawarelibraries.libcal.com/api/1.1"
 
-library_ids = {
-        9393: "Appoquinimink Public Library",
-        9394: "Bear Public Library",
-        9395: "Brandywine Hundred Library",
-        9410: "Bridgeville Public Library",
-        9396: "Claymont Public Library",
-        9397: "Corbit-Calloway Memorial Library",
-        9398: "Delaware City Public Library",
-        9411: "Delmar Public Library",
-        8206: "Dover Public Library",
-        9399: "Elsmere Public Library",
-        9412: "Frankford Public Library",
-        9369: "Georgetown Public Library",
-        9413: "Greenwood Public Library",
-        9407: "Harrington Public Library",
-        9400: "Hockessin Public Library",
-        9408: "Kent County Public Library",
-        9401: "Kirkwood Library",
-        9414: "Laurel Public Library",
-        9415: "Lewes Public Library",
-        9409: "Milford Public Library",
-        9416: "Millsboro Public Library",
-        9417: "Milton Public Library",
-        9402: "New Castle Public Library",
-        9403: "Newark Free Library",
-        9418: "Rehoboth Beach Public Library",
-        9404: "Route 9 Library & Innovation Center",
-        9419: "Seaford District Library",
-        9420: "Selbyville Public Library",
-        9181: "Smyrna Public Library",
-        9421: "South Coastal Public Library",
-        8205: "Wilmington Public Library",
-        9405: "Wilmington Public Library - North Branch",
-        9406: "Woodlawn Public Library"
-    }
+library_info = {
+    "Appoquinimink Public Library": {"cal_id": 9393, "lid": 4419},
+    "Bear Public Library": {"cal_id": 9394, "lid": 4420},
+    "Brandywine Hundred Library": {"cal_id": 9395, "lid": 4421},
+    "Bridgeville Public Library": {"cal_id": 9410, "lid": 4422},
+    "Claymont Public Library": {"cal_id": 9396, "lid": 4423},
+    "Corbit-Calloway Memorial Library": {"cal_id": 9397, "lid": 4424},
+    "Delaware City Public Library": {"cal_id": 9398, "lid": 4425},
+    "Delmar Public Library": {"cal_id": 9411, "lid": 4426},
+    "Dover Public Library": {"cal_id": 8206, "lid": 4389},
+    "Elsmere Public Library": {"cal_id": 9399, "lid": None},
+    "Frankford Public Library": {"cal_id": 9412, "lid": 4428},
+    "Georgetown Public Library": {"cal_id": 9369, "lid": 4429},
+    "Greenwood Public Library": {"cal_id": 9413, "lid": 4430},
+    "Harrington Public Library": {"cal_id": 9407, "lid": 4432},
+    "Hockessin Public Library": {"cal_id": 9400, "lid": None},
+    "Kent County Public Library": {"cal_id": 9408, "lid": 4433},
+    "Kirkwood Library": {"cal_id": 9401, "lid": None},
+    "Laurel Public Library": {"cal_id": 9414, "lid": 4435},
+    "Lewes Public Library": {"cal_id": 9415, "lid": 4436},
+    "Milford Public Library": {"cal_id": 9409, "lid": 4437},
+    "Millsboro Public Library": {"cal_id": 9416, "lid": 4438},
+    "Milton Public Library": {"cal_id": 9417, "lid": 4439},
+    "New Castle Public Library": {"cal_id": 9402, "lid": 4468},
+    "Newark Free Library": {"cal_id": 9403, "lid": 4470},
+    "Rehoboth Beach Public Library": {"cal_id": 9418, "lid": 4441},
+    "Route 9 Library & Innovation Center": {"cal_id": 9404, "lid": 4447},
+    "Seaford District Library": {"cal_id": 9419, "lid": 4443},
+    "Selbyville Public Library": {"cal_id": 9420, "lid": 4444},
+    "Smyrna Public Library": {"cal_id": 9181, "lid": 4711},
+    "South Coastal Public Library": {"cal_id": 9421, "lid": 4445},
+    "Wilmington Public Library": {"cal_id": 8205, "lid": 4391},
+    "Wilmington Public Library - North Branch": {"cal_id": 9405, "lid": 4440},
+    "Woodlawn Public Library": {"cal_id": 9406, "lid": None}
+}
 
 def get_library_ids():
-    return library_ids
+    return {library_info[library]["cal_id"]: library for library in library_info}
 
 def get_access_token():
     """Authenticate and get an access token."""
@@ -84,13 +84,31 @@ def get_events(access_token, date, calendars):
 
     return filtered_events
 
+def get_space_locations(access_token):
+    headers = {'Authorization': f'Bearer {access_token}'}
+    params = {
+        'details': 0,
+        'admin_only': 1,
+    }
+    
+    response = requests.get(API_URL + "/space/locations", headers=headers, params=params)
+    response.raise_for_status()
+    locations = response.json()
+    
+    # Print raw mapping for debugging
+    print("\nAll location IDs and names:")
+    for loc in sorted(locations, key=lambda x: x['lid']):
+        print(f"lid: {loc['lid']}, name: {loc['name']}")
+        
+    return locations
+
 def strip_html_tags(html_text):
     """Remove HTML tags from a string."""
     soup = BeautifulSoup(html_text, "html.parser")
     return soup.get_text()
 
-def get_library_choice(library_ids):
-    library_names = list(library_ids.values())
+def get_library_choice(library_info):
+    library_names = list(library_info.keys())
     library_completer = FuzzyWordCompleter(library_names)
     selected_ids = []
     
@@ -106,14 +124,13 @@ def get_library_choice(library_ids):
             print("Please select at least one library.")
             continue
             
-        for id, name in library_ids.items():
-            if name.lower() == selected.lower():
-                if id not in selected_ids:
-                    selected_ids.append(id)
-                    print(f"Added {name} to selection.")
-                else:
-                    print(f"{name} is already selected.")
-                break
+        if selected in library_info:
+            cal_id = library_info[selected]["cal_id"]
+            if cal_id not in selected_ids:
+                selected_ids.append(cal_id)
+                print(f"Added {selected} to selection.")
+            else:
+                print(f"{selected} is already selected.")
         else:
             print("Library not found. Please try again.")
 
@@ -125,11 +142,12 @@ def main():
         print("Invalid date format. Please use YYYY-MM-DD.")
         return
 
-    calendar_ids = get_library_choice(library_ids)
+    calendar_ids = get_library_choice(library_info)
 
     try:
         token = get_access_token()
         events = get_events(token, user_date, calendar_ids)
+        library_id_map = get_library_ids()  # map of cal_id to library name
 
         if events:
             print(f"\nEvents on {user_date}:")
@@ -140,8 +158,8 @@ def main():
                 description = strip_html_tags(event.get('description', 'No description available'))
                 location = event.get('location', {}).get('name', 'Unknown location')
                 print("--------------------------------------------------")
-                library_id = event.get('calendar', {}).get('id', 'Unknown library')
-                library_name = library_ids.get(library_id, 'Unknown library')
+                library_id = event.get('calendar', {}).get('id')
+                library_name = library_id_map.get(library_id, 'Unknown library')
                 print(f"Library: {library_name}")
                 print(f"Location: {location}")
                 print(f"Event: {title}")
