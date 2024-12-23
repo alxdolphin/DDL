@@ -47,13 +47,28 @@ class LibraryApp(QMainWindow):
         self.search_button.clicked.connect(self.search_events)
         layout.addWidget(self.search_button)
         
-        # results area
-        self.results = QTextBrowser()
-        layout.addWidget(self.results)
+        # results area - split into events and rooms
+        results_widget = QWidget()
+        results_layout = QVBoxLayout(results_widget)
+        
+        # events section
+        events_label = QLabel("Events:")
+        self.events_results = QTextBrowser()
+        results_layout.addWidget(events_label)
+        results_layout.addWidget(self.events_results)
+        
+        # room availability section
+        rooms_label = QLabel("Room Availability:")
+        self.rooms_results = QTextBrowser()
+        results_layout.addWidget(rooms_label)
+        results_layout.addWidget(self.rooms_results)
+        
+        layout.addWidget(results_widget)
         
     def search_events(self):
         # clear previous results
-        self.results.clear()
+        self.events_results.clear()
+        self.rooms_results.clear()
         
         # get selected date
         selected_date = self.calendar.selectedDate()
@@ -64,14 +79,14 @@ class LibraryApp(QMainWindow):
                             if checkbox.isChecked()]
         
         if not selected_libraries:
-            self.results.append("Please select at least one library.")
+            self.events_results.append("Please select at least one library.")
             return
             
         try:
             # get events
             token = libCal.get_access_token()
             events = libCal.get_events(token, date_str, selected_libraries)
-            library_ids = libCal.library_ids
+            library_ids = libCal.get_library_ids()
             
             if events:
                 for event in events:
@@ -83,12 +98,37 @@ class LibraryApp(QMainWindow):
                         f"<p><b>Description:</b> {libCal.strip_html_tags(event.get('description', 'No description available'))}</p>"
                         "<hr>"
                     )
-                    self.results.append(event_text)
+                    self.events_results.append(event_text)
             else:
-                self.results.append(f"No events found on {date_str}")
+                self.events_results.append(f"No events found on {date_str}")
+            
+            # fetch and display room availability
+            for cal_id in selected_libraries:
+                library_name = library_ids[cal_id]
+                lid = libCal.library_info[library_name]['lid']
+                
+                if lid:  # only process libraries with space booking capability
+                    try:
+                        bookings = libCal.get_space_bookings(token, lid, date_str)
+                        rooms = libCal.process_space_availability(bookings)
+                        
+                        if rooms:
+                            self.rooms_results.append(f"<h3>{library_name}</h3>")
+                            for room, bookings in rooms.items():
+                                self.rooms_results.append(f"<p><b>{room}</b></p>")
+                                if bookings:
+                                    for booking in bookings:
+                                        self.rooms_results.append(
+                                            f"• {booking['from']} - {booking['to']}: {booking['nickname']}<br>"
+                                        )
+                                else:
+                                    self.rooms_results.append("• Available all day<br>")
+                            self.rooms_results.append("<hr>")
+                    except Exception as e:
+                        self.rooms_results.append(f"Could not get space bookings for {library_name}: {str(e)}<br>")
                 
         except Exception as e:
-            self.results.append(f"Error fetching events: {str(e)}")
+            self.events_results.append(f"Error fetching data: {str(e)}")
 
 def main():
     app = QApplication(sys.argv)

@@ -49,8 +49,11 @@ library_info = {
     "Woodlawn Public Library": {"cal_id": 9406, "lid": None}
 }
 
+library_ids = {library_info[library]["cal_id"]: library for library in library_info}
+
 def get_library_ids():
-    return {library_info[library]["cal_id"]: library for library in library_info}
+    """Get mapping of calendar IDs to library names."""
+    return library_ids
 
 def get_access_token():
     """Authenticate and get an access token."""
