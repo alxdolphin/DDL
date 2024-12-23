@@ -11,8 +11,7 @@ load_dotenv()
 
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
-TOKEN_URL = os.getenv("TOKEN_URL")
-EVENTS_URL = os.getenv("EVENTS_URL")
+API_URL = "https://delawarelibraries.libcal.com/api/1.1"
 
 library_ids = {
         9393: "Appoquinimink Public Library",
@@ -55,7 +54,7 @@ def get_library_ids():
 
 def get_access_token():
     """Authenticate and get an access token."""
-    response = requests.post(TOKEN_URL, data={
+    response = requests.post(API_URL + "/oauth/token", data={
         'client_id': CLIENT_ID,
         'client_secret': CLIENT_SECRET,
         'grant_type': 'client_credentials'
@@ -73,7 +72,7 @@ def get_events(access_token, date, calendars):
             'cal_id': calendar_id,
             'date': date
         }
-        response = requests.get(EVENTS_URL, headers=headers, params=params)
+        response = requests.get(API_URL + "/events", headers=headers, params=params)
         response.raise_for_status()
         events.extend(response.json().get('events', []))
 
@@ -133,14 +132,13 @@ def main():
         events = get_events(token, user_date, calendar_ids)
 
         if events:
-            print(f"Events on {user_date}:")
+            print(f"\nEvents on {user_date}:")
             for event in events:
                 title = event['title']
                 start = event['start']
                 end = event['end']
                 description = strip_html_tags(event.get('description', 'No description available'))
                 location = event.get('location', {}).get('name', 'Unknown location')
-
                 print("--------------------------------------------------")
                 library_id = event.get('calendar', {}).get('id', 'Unknown library')
                 library_name = library_ids.get(library_id, 'Unknown library')
@@ -160,9 +158,9 @@ def main():
                     truncated_description = description_no_extra_spaces
                 print(f"Description: {truncated_description}")
                 print("--------------------------------------------------")
-
         else:
-            print(f"No events found on {user_date}.")
+            print(f"\nNo spaces information found for {user_date}.")
+            
     except requests.HTTPError as e:
         print(f"HTTP error: {e}")
     except Exception as e:
