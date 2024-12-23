@@ -84,24 +84,6 @@ def get_events(access_token, date, calendars):
 
     return filtered_events
 
-def get_space_locations(access_token):
-    headers = {'Authorization': f'Bearer {access_token}'}
-    params = {
-        'details': 0,
-        'admin_only': 1,
-    }
-    
-    response = requests.get(API_URL + "/space/locations", headers=headers, params=params)
-    response.raise_for_status()
-    locations = response.json()
-    
-    # Print raw mapping for debugging
-    print("\nAll location IDs and names:")
-    for loc in sorted(locations, key=lambda x: x['lid']):
-        print(f"lid: {loc['lid']}, name: {loc['name']}")
-        
-    return locations
-
 def strip_html_tags(html_text):
     """Remove HTML tags from a string."""
     soup = BeautifulSoup(html_text, "html.parser")
@@ -134,6 +116,54 @@ def get_library_choice(library_info):
         else:
             print("Library not found. Please try again.")
 
+def get_space_bookings(access_token, lid, date):
+    headers = {'Authorization': f'Bearer {access_token}'}
+    params = {
+        'lid': lid,
+        'date': date,
+        'limit': 100,
+        'check_in_status': 1,
+        'form_answers': 1,
+    }
+    
+    response = requests.get(f"{API_URL}/space/bookings", headers=headers, params=params)
+    response.raise_for_status()
+    return response.json()
+
+def process_space_availability(bookings):
+    rooms = {}
+    seen_pending = set()  
+    
+    for booking in bookings:
+        room_name = f"{booking['item_name']} (ID: {booking['eid']})" 
+        if room_name not in rooms:
+            rooms[room_name] = []
+        
+        is_confirmed = booking['status'] == 'Confirmed'
+        status_indicator = "[CONFIRMED] " if is_confirmed else "[PENDING] "
+        
+        booking_key = (
+            booking['item_name'], 
+            booking['fromDate'],
+            booking['toDate'],
+            booking.get('nickname', 'Booked')
+        )
+        
+        # skip if it's a duplicate pending booking
+        if not is_confirmed and booking_key in seen_pending:
+            continue
+            
+        if not is_confirmed:
+            seen_pending.add(booking_key)
+            
+        rooms[room_name].append({
+            'from': datetime.fromisoformat(booking['fromDate']).strftime('%I:%M %p'),
+            'to': datetime.fromisoformat(booking['toDate']).strftime('%I:%M %p'),
+            'nickname': status_indicator + (booking.get('nickname', 'Booked'))
+        })
+    
+    return rooms
+
 def main():
     user_date = input("Enter a date (YYYY-MM-DD): ")
     try:
@@ -145,7 +175,7 @@ def main():
     calendar_ids = get_library_choice(library_info)
 
     try:
-        token = get_access_token()
+        token = get_access_token()      
         events = get_events(token, user_date, calendar_ids)
         library_id_map = get_library_ids()  # map of cal_id to library name
 
@@ -177,8 +207,29 @@ def main():
                 print(f"Description: {truncated_description}")
                 print("--------------------------------------------------")
         else:
-            print(f"\nNo spaces information found for {user_date}.")
+            print(f"\nNo events found for {user_date}.")
             
+        print("\nRoom Availability:")
+        for cal_id in calendar_ids:
+            library_name = library_id_map[cal_id]
+            lid = library_info[library_name]['lid']
+            
+            if lid:  # some libraries don't have space booking
+                try:
+                    bookings = get_space_bookings(token, lid, user_date)
+                    rooms = process_space_availability(bookings)
+                    
+                    if rooms:
+                        print(f"\n{library_name}:")
+                        for room, bookings in rooms.items():
+                            print(f"\n  {room}:")
+                            if bookings:
+                                for booking in bookings:
+                                    print(f"    • {booking['from']} - {booking['to']}: {booking['nickname']}")
+                            else:
+                                print("    • Available all day")
+                except Exception as e:
+                    print(f"Could not get space bookings for {library_name}: {e}")
     except requests.HTTPError as e:
         print(f"HTTP error: {e}")
     except Exception as e:
