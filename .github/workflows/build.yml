@@ -15,12 +15,29 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: '3.13'
+<<<<<<< HEAD
     - name: Create .env file
       run: |
         echo "CLIENT_ID=${{ vars.CLIENT_ID }}" > event_finder/.env
         echo "CLIENT_SECRET=${{ vars.CLIENT_SECRET }}" >> event_finder/.env
         echo "API_URL=${{ vars.API_URL }}" >> event_finder/.env
 
+=======
+    - name: Configure secrets
+      shell: bash # bulletproof
+      run: |
+        if [ "${{ runner.os }}" = "macOS" ]; then
+          sed -i '' 's|CLIENT_ID = os\.environ\.get('\''CLIENT_ID'\'')|CLIENT_ID = '"'${{ secrets.CLIENT_ID }}'"'|' event_finder/libCal.py
+          sed -i '' 's|CLIENT_SECRET = os\.environ\.get('\''CLIENT_SECRET'\'')|CLIENT_SECRET = '"'${{ secrets.CLIENT_SECRET }}'"'|' event_finder/libCal.py
+          sed -i '' 's|API_URL = os\.environ\.get('\''API_URL'\'')|API_URL = '"'${{ secrets.API_URL }}'"'|' event_finder/libCal.py
+          sed -i '' '/load_dotenv(override=True)/d' event_finder/libCal.py
+        else
+          sed -i 's|CLIENT_ID = os\.environ\.get('\''CLIENT_ID'\'')|CLIENT_ID = '"'${{ secrets.CLIENT_ID }}'"'|' event_finder/libCal.py
+          sed -i 's|CLIENT_SECRET = os\.environ\.get('\''CLIENT_SECRET'\'')|CLIENT_SECRET = '"'${{ secrets.CLIENT_SECRET }}'"'|' event_finder/libCal.py
+          sed -i 's|API_URL = os\.environ\.get('\''API_URL'\'')|API_URL = '"'${{ secrets.API_URL }}'"'|' event_finder/libCal.py
+          sed -i '/load_dotenv(override=True)/d' event_finder/libCal.py
+        fi
+>>>>>>> f7103ef (fix: conceal secrets CORRECTLY)
     - run: pip install -r event_finder/requirements.txt pyinstaller
     - run: pyinstaller event_finder/app.spec
     - uses: actions/upload-artifact@v4
