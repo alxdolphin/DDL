@@ -1,37 +1,32 @@
-name: Build Windows Executable
+name: Build Executable
 
-on: [push]
+on:
+  push:
 
 jobs:
   build:
-    runs-on: windows-latest
-    
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['windows-latest', 'ubuntu-24.04', 'macos-latest']
     steps:
     - uses: actions/checkout@v2
-    
-    - name: Set up Python
-      uses: actions/setup-python@v2
+    - uses: actions/setup-python@v2
       with:
-        python-version: '3.x'
-    
+        python-version: '3.13'
     - name: Create .env file
       run: |
-        echo "CLIENT_ID=${{ secrets.CLIENT_ID }}" > event_finder/.env
-        echo "CLIENT_SECRET=${{ secrets.CLIENT_SECRET }}" >> event_finder/.env
-        echo "TOKEN_URL=${{ secrets.TOKEN_URL }}" >> event_finder/.env
-        echo "EVENTS_URL=${{ secrets.EVENTS_URL }}" >> event_finder/.env
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pyinstaller
-        pip install -r event_finder/requirements.txt
-    
-    - name: Build executable
-      run: pyinstaller event_finder/app.spec
-    
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
+        echo "CLIENT_ID=${{ vars.CLIENT_ID }}" > event_finder/.env
+        echo "CLIENT_SECRET=${{ vars.CLIENT_SECRET }}" >> event_finder/.env
+        echo "API_URL=${{ vars.API_URL }}" >> event_finder/.env
+
+    - run: pip install -r event_finder/requirements.txt pyinstaller
+    - run: pyinstaller event_finder/app.spec
+    - uses: actions/upload-artifact@v4
       with:
-        name: LibraryEvents
-        path: dist/LibraryEvents.exe 
+        name: LibraryEvents-${{ matrix.os }}
+        path: |
+          ${{ startsWith(matrix.os, 'windows') && 'dist/LibraryEvents.exe' || '' }}
+          ${{ startsWith(matrix.os, 'macos') && 'dist/LibraryEvents.app' || '' }}
+          ${{ startsWith(matrix.os, 'ubuntu') && 'dist/LibraryEvents' || '' }}
