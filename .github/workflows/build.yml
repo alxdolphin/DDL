@@ -17,17 +17,15 @@ jobs:
         python-version: '3.13'
     - name: Configure secrets
       shell: bash # bulletproof
-      run: |
+      run: |        
         if [ "${{ runner.os }}" = "macOS" ]; then
           sed -i '' 's|CLIENT_ID = os\.environ\.get('\''CLIENT_ID'\'')|CLIENT_ID = '"'${{ secrets.CLIENT_ID }}'"'|' event_finder/libCal.py
           sed -i '' 's|CLIENT_SECRET = os\.environ\.get('\''CLIENT_SECRET'\'')|CLIENT_SECRET = '"'${{ secrets.CLIENT_SECRET }}'"'|' event_finder/libCal.py
           sed -i '' 's|API_URL = os\.environ\.get('\''API_URL'\'')|API_URL = '"'${{ secrets.API_URL }}'"'|' event_finder/libCal.py
-          sed -i '' '/load_dotenv(override=True)/d' event_finder/libCal.py
         else
           sed -i 's|CLIENT_ID = os\.environ\.get('\''CLIENT_ID'\'')|CLIENT_ID = '"'${{ secrets.CLIENT_ID }}'"'|' event_finder/libCal.py
           sed -i 's|CLIENT_SECRET = os\.environ\.get('\''CLIENT_SECRET'\'')|CLIENT_SECRET = '"'${{ secrets.CLIENT_SECRET }}'"'|' event_finder/libCal.py
           sed -i 's|API_URL = os\.environ\.get('\''API_URL'\'')|API_URL = '"'${{ secrets.API_URL }}'"'|' event_finder/libCal.py
-          sed -i '/load_dotenv(override=True)/d' event_finder/libCal.py
         fi
     - run: pip install -r event_finder/requirements.txt pyinstaller
     - run: pyinstaller event_finder/app.spec

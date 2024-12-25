@@ -7,11 +7,18 @@ from dotenv import load_dotenv
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import FuzzyWordCompleter
 
-load_dotenv()
+try:
+    load_dotenv()
+except Exception:
+    pass
 
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
-API_URL = "https://delawarelibraries.libcal.com/api/1.1"
+API_URL = os.getenv("API_URL")
+
+# add validation for required environment variables
+if not all([CLIENT_ID, CLIENT_SECRET, API_URL]):
+    raise RuntimeError("Missing required environment variables. Ensure CLIENT_ID, CLIENT_SECRET, and API_URL are set.")
 
 library_info = {
     "Appoquinimink Public Library": {"cal_id": 9393, "lid": 4419},
