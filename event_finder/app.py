@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
 from PyQt6.QtCore import QDate
 import libCal
 from datetime import datetime
+import re
 
 class LibraryApp(QMainWindow):
     def __init__(self):
@@ -118,8 +119,15 @@ class LibraryApp(QMainWindow):
                                 self.rooms_results.append(f"<p><b>{room}</b></p>")
                                 if bookings:
                                     for booking in bookings:
+                                        time_range = f"{booking['from']} - {booking['to']}"
+                                        # sloppy way to get color parity with CLI
+                                        name = re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', booking['nickname'])
+                                        name = name.replace('[PENDING]', '').replace('[CONFIRMED]', '').strip()
+                                        
+                                        status = format_status_gui('PENDING' if '[PENDING]' in booking['nickname'] else 'CONFIRMED')
+                                        
                                         self.rooms_results.append(
-                                            f"• {booking['from']} - {booking['to']}: {booking['nickname']}<br>"
+                                            f"• {time_range}: {status} {name}<br>"
                                         )
                                 else:
                                     self.rooms_results.append("• Available all day<br>")
