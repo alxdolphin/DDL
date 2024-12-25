@@ -130,6 +130,11 @@ class LibraryApp(QMainWindow):
         except Exception as e:
             self.events_results.append(f"Error fetching data: {str(e)}")
 
+def format_status_gui(status):
+    if status == "CONFIRMED":
+        return '<span style="color: #2ecc71;">[CONFIRMED]</span>'
+    return '<span style="color: #f1c40f;">[PENDING]</span>'
+
 def main():
     app = QApplication(sys.argv)
     window = LibraryApp()
