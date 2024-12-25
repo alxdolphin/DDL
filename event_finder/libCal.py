@@ -134,6 +134,10 @@ def get_space_bookings(access_token, lid, date):
     return response.json()
 
 def process_space_availability(bookings):
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RESET = '\033[0m'
+    
     rooms = {}
     seen_pending = set()  
     
@@ -143,7 +147,7 @@ def process_space_availability(bookings):
             rooms[room_name] = []
         
         is_confirmed = booking['status'] == 'Confirmed'
-        status_indicator = "[CONFIRMED] " if is_confirmed else "[PENDING] "
+        status_indicator = f"{GREEN}[CONFIRMED]{RESET} " if is_confirmed else f"{YELLOW}[PENDING]{RESET} "
         
         booking_key = (
             booking['item_name'], 
@@ -165,7 +169,7 @@ def process_space_availability(bookings):
             'nickname': status_indicator + (booking.get('nickname', 'Booked'))
         })
     
-    return rooms
+    return dict(sorted(rooms.items()))
 
 def main():
     user_date = input("Enter a date (YYYY-MM-DD): ")
