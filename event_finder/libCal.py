@@ -8,13 +8,13 @@ from prompt_toolkit import prompt
 from prompt_toolkit.completion import FuzzyWordCompleter
 
 try:
-    load_dotenv()
+    load_dotenv(override=True)
 except Exception:
     pass
 
-CLIENT_ID = os.getenv("CLIENT_ID")
-CLIENT_SECRET = os.getenv("CLIENT_SECRET")
-API_URL = os.getenv("API_URL")
+CLIENT_ID = os.environ.get('CLIENT_ID')
+CLIENT_SECRET = os.environ.get('CLIENT_SECRET')
+API_URL = "https://delawarelibraries.libcal.com/api/1.1"
 
 # add validation for required environment variables
 if not all([CLIENT_ID, CLIENT_SECRET, API_URL]):
