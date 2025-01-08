@@ -1,62 +1,33 @@
 #!/usr/bin/env python
 import os
+import json
 from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import FuzzyWordCompleter
+from pathlib import Path
 
 try:
     load_dotenv(override=True)
 except Exception:
     pass
 
-CLIENT_ID = os.environ.get('CLIENT_ID')
-CLIENT_SECRET = os.environ.get('CLIENT_SECRET')
-API_URL = "https://delawarelibraries.libcal.com/api/1.1"
+config_path = Path(__file__).parent.parent / 'config.json'
+with open(config_path) as f:
+    config = json.load(f)
+
+CLIENT_ID = config['client_id']
+CLIENT_SECRET = config['client_secret']
+API_URL = config['api_url']
+LIBRARY_INFO = config['library_info']
 
 # add validation for required environment variables
 if not all([CLIENT_ID, CLIENT_SECRET, API_URL]):
     raise RuntimeError("Missing required environment variables. Ensure CLIENT_ID, CLIENT_SECRET, and API_URL are set.")
 
-library_info = {
-    "Appoquinimink Public Library": {"cal_id": 9393, "lid": 4419},
-    "Bear Public Library": {"cal_id": 9394, "lid": 4420},
-    "Brandywine Hundred Library": {"cal_id": 9395, "lid": 4421},
-    "Bridgeville Public Library": {"cal_id": 9410, "lid": 4422},
-    "Claymont Public Library": {"cal_id": 9396, "lid": 4423},
-    "Corbit-Calloway Memorial Library": {"cal_id": 9397, "lid": 4424},
-    "Delaware City Public Library": {"cal_id": 9398, "lid": 4425},
-    "Delmar Public Library": {"cal_id": 9411, "lid": 4426},
-    "Dover Public Library": {"cal_id": 8206, "lid": 4389},
-    "Elsmere Public Library": {"cal_id": 9399, "lid": None},
-    "Frankford Public Library": {"cal_id": 9412, "lid": 4428},
-    "Georgetown Public Library": {"cal_id": 9369, "lid": 4429},
-    "Greenwood Public Library": {"cal_id": 9413, "lid": 4430},
-    "Harrington Public Library": {"cal_id": 9407, "lid": 4432},
-    "Hockessin Public Library": {"cal_id": 9400, "lid": None},
-    "Kent County Public Library": {"cal_id": 9408, "lid": 4433},
-    "Kirkwood Library": {"cal_id": 9401, "lid": None},
-    "Laurel Public Library": {"cal_id": 9414, "lid": 4435},
-    "Lewes Public Library": {"cal_id": 9415, "lid": 4436},
-    "Milford Public Library": {"cal_id": 9409, "lid": 4437},
-    "Millsboro Public Library": {"cal_id": 9416, "lid": 4438},
-    "Milton Public Library": {"cal_id": 9417, "lid": 4439},
-    "New Castle Public Library": {"cal_id": 9402, "lid": 4468},
-    "Newark Free Library": {"cal_id": 9403, "lid": 4470},
-    "Rehoboth Beach Public Library": {"cal_id": 9418, "lid": 4441},
-    "Route 9 Library & Innovation Center": {"cal_id": 9404, "lid": 4447},
-    "Seaford District Library": {"cal_id": 9419, "lid": 4443},
-    "Selbyville Public Library": {"cal_id": 9420, "lid": 4444},
-    "Smyrna Public Library": {"cal_id": 9181, "lid": 4711},
-    "South Coastal Public Library": {"cal_id": 9421, "lid": 4445},
-    "Wilmington Public Library": {"cal_id": 8205, "lid": 4391},
-    "Wilmington Public Library - North Branch": {"cal_id": 9405, "lid": 4440},
-    "Woodlawn Public Library": {"cal_id": 9406, "lid": None}
-}
-
-library_ids = {library_info[library]["cal_id"]: library for library in library_info}
+library_ids = {LIBRARY_INFO[library]["cal_id"]: library for library in LIBRARY_INFO}
 
 def get_library_ids():
     """Get mapping of calendar IDs to library names."""
@@ -178,6 +149,38 @@ def process_space_availability(bookings):
     
     return dict(sorted(rooms.items()))
 
+def get_space_availability(access_token, lid, date, start_time=None, end_time=None):
+    """Search for available spaces within a time range."""
+    headers = {'Authorization': f'Bearer {access_token}'}
+    params = {
+        'lid': lid,
+        'date': date,
+        'availability': date,  # api expects same date in both fields
+        'limit': 100
+    }
+    
+    response = requests.get(f"{API_URL}/space/availability", headers=headers, params=params)
+    response.raise_for_status()
+    availability_data = response.json()
+    
+    # filter results if time range specified
+    if start_time and end_time:
+        filtered_spaces = []
+        for space in availability_data:
+            # check if space has any availability slots that contain our desired time range
+            for slot in space.get('availability', []):
+                slot_start = datetime.fromisoformat(slot['from'])
+                slot_end = datetime.fromisoformat(slot['to'])
+                desired_start = datetime.fromisoformat(f"{date}T{start_time}")
+                desired_end = datetime.fromisoformat(f"{date}T{end_time}")
+                
+                if slot_start <= desired_start and slot_end >= desired_end:
+                    filtered_spaces.append(space)
+                    break  # no need to check other slots for this space
+        return filtered_spaces
+    
+    return availability_data
+
 def main():
     user_date = input("Enter a date (YYYY-MM-DD): ")
     try:
@@ -186,12 +189,51 @@ def main():
         print("Invalid date format. Please use YYYY-MM-DD.")
         return
 
-    calendar_ids = get_library_choice(library_info)
+    # add time range input
+    search_available = input("Would you like to search for available spaces? (y/n): ").lower() == 'y'
+    start_time = end_time = None
+    if search_available:
+        start_time = input("Enter start time (HH:MM, 24hr format) or press enter to skip: ")
+        if start_time:
+            end_time = input("Enter end time (HH:MM, 24hr format): ")
+            # validate time format
+            try:
+                datetime.strptime(start_time, "%H:%M")
+                datetime.strptime(end_time, "%H:%M")
+            except ValueError:
+                print("Invalid time format. Please use HH:MM (24hr format).")
+                return
+
+    calendar_ids = get_library_choice(LIBRARY_INFO)
+    library_id_map = get_library_ids()  # Moved this line up
 
     try:
-        token = get_access_token()      
+        token = get_access_token()
+        
+        # First show available spaces if requested
+        if search_available:
+            print("\nSearching for available spaces...")
+            for cal_id in calendar_ids:
+                library_name = library_id_map[cal_id]
+                lid = LIBRARY_INFO[library_name]['lid']
+                
+                if lid:
+                    try:
+                        available_spaces = get_space_availability(token, lid, user_date, start_time, end_time)
+                        if available_spaces:
+                            print(f"\n{library_name} - Available Spaces:")
+                            for space in available_spaces:
+                                print(f"\n  {space['name']}:")
+                                for slot in space['availability']:
+                                    slot_start = datetime.fromisoformat(slot['from']).strftime('%I:%M %p')
+                                    slot_end = datetime.fromisoformat(slot['to']).strftime('%I:%M %p')
+                                    print(f"    • {slot_start} - {slot_end}")
+                        else:
+                            print(f"\n{library_name} - No spaces available for requested time.")
+                    except Exception as e:
+                        print(f"Could not get space availability for {library_name}: {e}")
+
         events = get_events(token, user_date, calendar_ids)
-        library_id_map = get_library_ids()  # map of cal_id to library name
 
         if events:
             print(f"\nEvents on {user_date}:")
@@ -226,7 +268,7 @@ def main():
         print("\nRoom Availability:")
         for cal_id in calendar_ids:
             library_name = library_id_map[cal_id]
-            lid = library_info[library_name]['lid']
+            lid = LIBRARY_INFO[library_name]['lid']
             
             if lid:  # some libraries don't have space booking
                 try:
